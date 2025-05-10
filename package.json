@@ -1,0 +1,122 @@
+{
+  "name": "MarkView",
+  "displayName": "MarkView",
+  "description": "",
+  "version": "0.0.1",
+  "icon": "icon.png",
+  "publisher": "Zhi-Yi",
+  "engines": {
+    "vscode": "^1.99.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./extension.js",
+  "contributes": {
+    "menus": {
+      "view/item/context": [
+        {
+          "command": "MarkView.removeMarkedItem",
+          "when": "view == marked-files",
+          "group": "inline"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "MarkView.markFileOrFolder",
+          "group": "navigation"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "MarkView.markFileOrFolder",
+          "when": "resourceLangId",
+          "group": "navigation"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "MarkView.markFileOrFolder",
+          "when": "resourceLangId",
+          "group": "navigation"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "MarkView.switchToFlat",
+          "when": "view == marked-files",
+          "group": "navigation"
+        },
+        {
+          "command": "MarkView.switchToTree",
+          "when": "view == marked-files",
+          "group": "navigation"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "package-explorer",
+          "title": "explore",
+          "icon": "$(output)"
+        }
+      ]
+    },
+    "views": {
+      "package-explorer": [
+        {
+          "icon": "assets/icon.svg",
+          "id": "marked-files",
+          "name": ""
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "MarkView.removeMarkedItem",
+        "title": "移除标记",
+        "icon": "$(notebook-delete-cell)"
+      },
+      {
+        "command": "MarkView.switchToTree",
+        "title": "树模式",
+        "icon": "$(list-selection)"
+      },
+      {
+        "command": "MarkView.switchToFlat",
+        "title": "平铺模式",
+        "icon": "$(list-unordered)"
+      },
+      {
+        "command": "MarkView.markFileOrFolder",
+        "title": "于当前版本关注"
+      },
+      {
+        "command": "MarkView.openMarkedFilesManager",
+        "title": "打开标记文件列表"
+      },
+      {
+        "command": "MarkView.refreshMarkedFiles",
+        "title": "刷新标记文件视图"
+      }
+    ]
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "yarn run lint",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.99.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "eslint": "^9.23.0"
+  },
+  "dependencies": {
+    "simple-git": "^3.27.0"
+  }
+}
