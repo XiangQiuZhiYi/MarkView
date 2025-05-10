@@ -52,6 +52,11 @@
           "command": "MarkView.switchToTree",
           "when": "view == marked-files",
           "group": "navigation"
+        },
+        {
+          "command": "MarkView.filterFiles",
+          "when": "view == marked-files",
+          "group": "navigation"
         }
       ]
     },
@@ -83,6 +88,11 @@
         "command": "MarkView.switchToTree",
         "title": "树模式",
         "icon": "$(list-selection)"
+      },
+      {
+        "command": "MarkView.filterFiles",
+        "title": "筛选文件",
+        "icon": "$(search)"
       },
       {
         "command": "MarkView.switchToFlat",
