@@ -1,0 +1,8 @@
+
+    .monaco-list-row.selected {
+      background: none !important;
+    }
+    .monaco-list-row.focused {
+      box-shadow: none !important;
+    }
+  

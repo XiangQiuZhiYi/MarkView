@@ -2,7 +2,6 @@ const vscode = require("vscode");
 const path = require("path");
 const fs = require("fs");
 const simpleGit = require("simple-git");
-const { buildTree, buildFileNode } = require("./src/utils");
 
 let markedFiles = new Set();
 let branchTagMap = new Map();
@@ -21,12 +20,36 @@ async function getCurrentGitBranch(url) {
   }
 }
 
+function buildTree(paths, rootPath, branch) {
+  const root = { children: {}, branch };
+  for (const fullPath of paths) {
+    const relativePath = path.relative(rootPath, fullPath);
+    const parts = relativePath.split(path.sep);
+    let current = root;
+    for (const part of parts) {
+      current.children[part] = current.children[part] || { children: {}, branch };
+      current = current.children[part];
+    }
+    current.fullPath = fullPath;
+  }
+  return root;
+}
+
+function buildFileNode(node, label, activeFile) {
+  const isLeaf = !node || Object.keys(node.children || {}).length === 0;
+  const collapsibleState = isLeaf
+    ? vscode.TreeItemCollapsibleState.None
+    : vscode.TreeItemCollapsibleState.Collapsed;
+  const item = new FileNode(label, node.fullPath || "", collapsibleState, node.branch, node.fullPath === activeFile);
+  item["children"] = node.children;
+  return item;
+}
+
 class FileNode extends vscode.TreeItem {
-  constructor(label, fullPath, collapsibleState, branch) {
-    super(label);
+  constructor(label, fullPath, collapsibleState, branch, isActive = false) {
+    super(label, collapsibleState);
     this.fullPath = fullPath;
     this.branch = branch;
-    this.collapsibleState = collapsibleState;
     this.command =
       fullPath && collapsibleState === vscode.TreeItemCollapsibleState.None
         ? {
@@ -38,6 +61,10 @@ class FileNode extends vscode.TreeItem {
     this.contextValue = "fileNode";
     if (fullPath) {
       this.resourceUri = vscode.Uri.file(fullPath);
+      if (isActive) {
+        // 高亮图标
+        this.iconPath = new vscode.ThemeIcon("circle-filled");
+      }
     } else {
       this.iconPath = new vscode.ThemeIcon("folder");
     }
@@ -49,6 +76,12 @@ class MarkedFilesProvider {
     this.workspaceRoot = workspaceRoot;
     this._onDidChangeTreeData = new vscode.EventEmitter();
     this.onDidChangeTreeData = this._onDidChangeTreeData.event;
+    this.activeFile = null;
+  }
+
+  setActiveFile(filePath) {
+    this.activeFile = filePath;
+    this.refresh();
   }
 
   refresh() {
@@ -81,13 +114,14 @@ class MarkedFilesProvider {
           })
           .filter(Boolean);
       } else {
-        return filterFiles(Array.from(element.children)).map((file) => {
+        return filterFiles(Array.from(element.children)).map((file, index) => {
           const relative = path.relative(this.workspaceRoot, file);
           return new FileNode(
             relative,
             file,
             vscode.TreeItemCollapsibleState.None,
-            element.branch
+            element.branch,
+            file === this.activeFile
           );
         });
       }
@@ -96,18 +130,19 @@ class MarkedFilesProvider {
     if (!element) {
       const root = { children: {} };
       branchTagMap.forEach((files, branch) => {
+        const filtered = filterFiles(Array.from(files));
         root.children[branch] = { children: {}, branch: branch };
-        const tree = buildTree(Array.from(files), this.workspaceRoot, branch);
+        const tree = buildTree(Array.from(filtered), this.workspaceRoot, branch);
         root.children[branch]["children"] = tree.children;
       });
       const data = Object.keys(root.children).map((name) =>
-        buildFileNode(root.children[name], name)
+        buildFileNode(root.children[name], name, this.activeFile)
       );
       return data;
     } else {
       const children = element.children || {};
       return Object.keys(children).map((name) =>
-        buildFileNode(children[name], name)
+        buildFileNode(children[name], name, this.activeFile)
       );
     }
   }
@@ -204,6 +239,16 @@ async function activate(context) {
 
   const provider = new MarkedFilesProvider(workspaceRoot);
   vscode.window.registerTreeDataProvider("marked-files", provider);
+
+  // 监听编辑器焦点变化
+  vscode.window.onDidChangeActiveTextEditor((editor) => {
+    if (editor) {
+      const currentFilePath = editor.document.uri.fsPath;
+      provider.setActiveFile(
+        markedFiles.has(currentFilePath) ? currentFilePath : null
+      );
+    }
+  });
 
   let treeView = vscode.window.createTreeView("marked-files", {
     treeDataProvider: provider,
